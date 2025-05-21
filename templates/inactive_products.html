@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Inactive Products</h2>
+    
+    <form method="GET" class="mb-4">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="days">Days Without Activity</label>
+                    <input type="number" class="form-control" id="days" name="days" value="{{ days }}" min="1">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button type="submit" class="btn btn-primary btn-block">Filter</button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Reference</th>
+                    <th>Current Stock</th>
+                    <th>Stock Value</th>
+                    <th>Last Movement</th>
+                    <th>Days Without Activity</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr class="table-{{ 'danger' if product.statut_activite == 'Inactif' else 'warning' if product.statut_activite == 'Peu actif' else 'info' }}">
+                    <td>{{ product.name }}</td>
+                    <td>{{ product.reference }}</td>
+                    <td>{{ product.current_stock }}</td>
+                    <td>{{ "%.2f"|format(product.valeur_stock) }}</td>
+                    <td>{{ product.dernier_mouvement or 'Never' }}</td>
+                    <td>{{ product.jours_sans_mouvement }}</td>
+                    <td>{{ product.statut_activite }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %} 

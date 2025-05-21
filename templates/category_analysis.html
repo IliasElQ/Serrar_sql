@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Category Analysis</h2>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Number of Products</th>
+                    <th>Total Stock</th>
+                    <th>Stock Value</th>
+                    <th>Products in Alert</th>
+                    <th>Alert Percentage</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category in categories %}
+                <tr class="table-{{ 'danger' if category.statut_categorie == 'Critique' else 'warning' if category.statut_categorie == 'Attention' else 'success' }}">
+                    <td>{{ category.category_name }}</td>
+                    <td>{{ category.nombre_produits }}</td>
+                    <td>{{ category.stock_total }}</td>
+                    <td>{{ "%.2f"|format(category.valeur_stock) }}</td>
+                    <td>{{ category.produits_alerte }}</td>
+                    <td>{{ "%.2f"|format(category.pourcentage_alerte) }}%</td>
+                    <td>{{ category.statut_categorie }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %} 

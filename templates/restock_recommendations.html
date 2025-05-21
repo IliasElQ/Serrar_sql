@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Restock Recommendations</h2>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Reference</th>
+                    <th>Current Stock</th>
+                    <th>Alert Threshold</th>
+                    <th>Recommended Quantity</th>
+                    <th>Restock Needed</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rec in recommendations %}
+                <tr>
+                    <td>{{ rec.name }}</td>
+                    <td>{{ rec.reference }}</td>
+                    <td>{{ rec.current_stock }}</td>
+                    <td>{{ rec.alert_threshold }}</td>
+                    <td>{{ rec.quantite_recommandee }}</td>
+                    <td>{{ rec.reapprovisionner }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %} 
