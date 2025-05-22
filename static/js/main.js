@@ -21,9 +21,9 @@ function formatDate(dateString) {
 function validateForm(formId) {
     const form = document.getElementById(formId);
     if (!form) return true;
-    
+
     let isValid = true;
-    
+
     // Vérifier les champs requis
     const requiredFields = form.querySelectorAll('[required]');
     requiredFields.forEach(field => {
@@ -34,14 +34,14 @@ function validateForm(formId) {
             field.classList.remove('is-invalid');
         }
     });
-    
+
     // Vérifier les champs numériques
     const numericFields = form.querySelectorAll('input[type="number"]');
     numericFields.forEach(field => {
         const value = parseFloat(field.value);
         const min = parseFloat(field.getAttribute('min') || '-Infinity');
         const max = parseFloat(field.getAttribute('max') || 'Infinity');
-        
+
         if (isNaN(value) || value < min || value > max) {
             field.classList.add('is-invalid');
             isValid = false;
@@ -49,7 +49,7 @@ function validateForm(formId) {
             field.classList.remove('is-invalid');
         }
     });
-    
+
     return isValid;
 }
 
@@ -71,9 +71,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.stock-status').forEach(status => {
             const stock = parseInt(status.dataset.stock);
             const threshold = parseInt(status.dataset.threshold);
-            
+
             status.classList.remove('stock-low', 'stock-out', 'stock-ok');
-            
+
             if (stock === 0) {
                 status.classList.add('stock-out');
                 status.textContent = 'Rupture de stock';
@@ -83,6 +83,44 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 status.classList.add('stock-ok');
                 status.textContent = 'En stock';
+            }
+
+            // Add stock progress bar if it doesn't exist
+            const parentDiv = status.parentElement;
+            if (!parentDiv.querySelector('.stock-progress')) {
+                // Create progress bar container
+                const progressDiv = document.createElement('div');
+                progressDiv.className = 'stock-progress mt-2';
+
+                // Create progress bar
+                const progressBar = document.createElement('div');
+                progressBar.className = 'stock-progress-bar';
+
+                // Calculate percentage (max 100%)
+                let percentage = (stock / (threshold * 2)) * 100;
+                if (percentage > 100) percentage = 100;
+
+                // Set progress bar width and color
+                progressBar.style.width = percentage + '%';
+                if (stock === 0) {
+                    progressBar.classList.add('bg-danger');
+                } else if (stock <= threshold) {
+                    progressBar.classList.add('bg-warning');
+                } else {
+                    progressBar.classList.add('bg-success');
+                }
+
+                // Append progress bar to container
+                progressDiv.appendChild(progressBar);
+
+                // Append container after the status element
+                parentDiv.insertBefore(progressDiv, status.nextSibling);
+
+                // Add stock level indicator
+                const stockInfo = document.createElement('small');
+                stockInfo.className = 'text-muted d-block mt-1';
+                stockInfo.innerHTML = `<strong>${stock}</strong>/${threshold} unités`;
+                parentDiv.insertBefore(stockInfo, progressDiv.nextSibling);
             }
         });
     }
@@ -108,11 +146,11 @@ document.addEventListener('DOMContentLoaded', function() {
         searchInput.addEventListener('input', debounce(function(e) {
             const searchTerm = e.target.value.toLowerCase();
             const productCards = document.querySelectorAll('.product-card');
-            
+
             productCards.forEach(card => {
                 const productName = card.querySelector('.product-name').textContent.toLowerCase();
                 const productRef = card.querySelector('.product-ref').textContent.toLowerCase();
-                
+
                 if (productName.includes(searchTerm) || productRef.includes(searchTerm)) {
                     card.style.display = '';
                 } else {

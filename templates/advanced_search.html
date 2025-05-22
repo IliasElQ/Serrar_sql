@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Recherche Avancée - Serrar SQL{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="display-4 mb-4">
+            <i class="fas fa-search text-primary me-2"></i>
+            Recherche Avancée
+        </h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-2"></i>Retour à l'accueil
+        </a>
+    </div>
+</div>
+
+<!-- Advanced Search Form -->
+<div class="card mb-4 search-form">
+    <div class="card-body">
+        <form action="{{ url_for('advanced_search') }}" method="GET" class="row g-3">
+            <div class="col-md-6">
+                <label for="search" class="form-label">Nom ou référence</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           placeholder="Rechercher..." value="{{ filters.search or '' }}">
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <label for="category_id" class="form-label">Catégorie</label>
+                <select class="form-select" id="category_id" name="category_id">
+                    <option value="">Toutes les catégories</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}" {% if filters.category_id|string == category.id|string %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-6">
+                <label for="min_price" class="form-label">Prix minimum</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-euro-sign"></i></span>
+                    <input type="number" class="form-control" id="min_price" name="min_price" 
+                           placeholder="Min" step="0.01" min="0" value="{{ filters.min_price or '' }}">
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <label for="max_price" class="form-label">Prix maximum</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-euro-sign"></i></span>
+                    <input type="number" class="form-control" id="max_price" name="max_price" 
+                           placeholder="Max" step="0.01" min="0" value="{{ filters.max_price or '' }}">
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <label for="stock_status" class="form-label">État du stock</label>
+                <select class="form-select" id="stock_status" name="stock_status">
+                    <option value="">Tous les états</option>
+                    <option value="low">Stock faible</option>
+                    <option value="out">Rupture de stock</option>
+                    <option value="in">En stock</option>
+                </select>
+            </div>
+            
+            <div class="col-md-6 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-2"></i>Rechercher
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results Section -->
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>
+            Résultats de la recherche
+            {% if products %}
+            <span class="badge bg-light text-dark ms-2">{{ products|length }} produit(s)</span>
+            {% endif %}
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if products %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Référence</th>
+                        <th>Catégorie</th>
+                        <th>Prix</th>
+                        <th>Stock</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>{{ product.name }}</td>
+                        <td>{{ product.reference }}</td>
+                        <td>{{ product.category_name or 'Sans catégorie' }}</td>
+                        <td>{{ "%.2f"|format(product.price) }} €</td>
+                        <td>
+                            <span class="stock-status" 
+                                  data-stock="{{ product.current_stock }}"
+                                  data-threshold="{{ product.alert_threshold }}">
+                                {% if product.current_stock == 0 %}
+                                    Rupture de stock
+                                {% elif product.current_stock <= product.alert_threshold %}
+                                    Stock faible
+                                {% else %}
+                                    En stock
+                                {% endif %}
+                            </span>
+                            <small class="d-block text-muted">{{ product.current_stock }} / {{ product.alert_threshold }}</small>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('update_stock', product_id=product.id) }}" 
+                                   class="btn btn-outline-primary" data-bs-toggle="tooltip" title="Mettre à jour le stock">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{{ url_for('product_history', product_id=product.id) }}" 
+                                   class="btn btn-outline-info" data-bs-toggle="tooltip" title="Voir l'historique">
+                                    <i class="fas fa-history"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            Aucun produit ne correspond à vos critères de recherche.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+</script>
+{% endblock %}

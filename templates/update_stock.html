@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Mise à jour du Stock - {{ product.name }} - Serrar SQL{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Accueil</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Mise à jour du Stock</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-6">
+            <!-- Product Information Card -->
+            <div class="card mb-4 product-detail-card">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0">
+                        <i class="fas fa-box me-2"></i>{{ product.name }}
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <p><strong>Référence:</strong> {{ product.reference }}</p>
+                    <p><strong>Prix:</strong> {{ "%.2f"|format(product.price) }} €</p>
+                    <p>
+                        <strong>Stock actuel:</strong> 
+                        <span class="badge {% if product.current_stock <= product.alert_threshold %}bg-warning{% elif product.current_stock == 0 %}bg-danger{% else %}bg-success{% endif %} fs-6">
+                            {{ product.current_stock }} unités
+                        </span>
+                    </p>
+                    <p><strong>Seuil d'alerte:</strong> {{ product.alert_threshold }} unités</p>
+
+                    <div class="mt-3">
+                        <a href="{{ url_for('product_history', product_id=product.id) }}" class="btn btn-info">
+                            <i class="fas fa-history me-2"></i>Voir l'historique
+                        </a>
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary ms-2">
+                            <i class="fas fa-arrow-left me-2"></i>Retour
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <!-- Stock Update Form -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>Mise à jour du Stock
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('update_stock', product_id=product.id) }}" method="POST" class="needs-validation" novalidate>
+                        <div class="mb-3">
+                            <label class="form-label">Type de mouvement</label>
+                            <div class="btn-group w-100" role="group" aria-label="Type de mouvement">
+                                <input type="radio" class="btn-check" name="movement_type" id="movement_in" value="in" checked>
+                                <label class="btn btn-outline-success" for="movement_in">
+                                    <i class="fas fa-plus-circle me-2"></i>Entrée de stock
+                                </label>
+
+                                <input type="radio" class="btn-check" name="movement_type" id="movement_out" value="out">
+                                <label class="btn btn-outline-danger" for="movement_out">
+                                    <i class="fas fa-minus-circle me-2"></i>Sortie de stock
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">Quantité</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-cubes"></i></span>
+                                <input type="number" class="form-control" id="quantity" name="quantity" min="1" value="1" required>
+                                <span class="input-group-text">unités</span>
+                                <div class="invalid-feedback">
+                                    Veuillez entrer une quantité valide.
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                {% if product.current_stock == 0 %}
+                                <span class="text-danger">Attention: Ce produit est actuellement en rupture de stock.</span>
+                                {% elif product.current_stock <= product.alert_threshold %}
+                                <span class="text-warning">Attention: Ce produit a un stock faible.</span>
+                                {% endif %}
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="reason" class="form-label">Raison</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-comment"></i></span>
+                                <select class="form-select" id="reason" name="reason">
+                                    <option value="Réapprovisionnement">Réapprovisionnement</option>
+                                    <option value="Vente">Vente</option>
+                                    <option value="Retour client">Retour client</option>
+                                    <option value="Inventaire">Inventaire</option>
+                                    <option value="Perte/Casse">Perte/Casse</option>
+                                    <option value="Autre">Autre</option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Veuillez indiquer une raison.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Enregistrer le mouvement
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
