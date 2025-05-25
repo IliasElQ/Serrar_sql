@@ -53,7 +53,84 @@ function validateForm(formId) {
     return isValid;
 }
 
-// Initialisation des tooltips et validation des formulaires
+// Fonction pour afficher une notification toast
+function showToast(title, message, type = 'info') {
+    const toast = document.getElementById('liveToast');
+    const toastTitle = document.getElementById('toastTitle');
+    const toastMessage = document.getElementById('toastMessage');
+    const toastTime = document.getElementById('toastTime');
+
+    // Set content
+    toastTitle.textContent = title;
+    toastMessage.textContent = message;
+    toastTime.textContent = 'À l\'instant';
+
+    // Set toast color based on type
+    toast.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'bg-info');
+    const toastHeader = toast.querySelector('.toast-header i');
+    toastHeader.classList.remove('text-success', 'text-danger', 'text-warning', 'text-info');
+
+    switch(type) {
+        case 'success':
+            toastHeader.classList.add('text-success');
+            toastHeader.classList.remove('fa-info-circle', 'fa-exclamation-circle', 'fa-exclamation-triangle');
+            toastHeader.classList.add('fa-check-circle');
+            break;
+        case 'danger':
+            toastHeader.classList.add('text-danger');
+            toastHeader.classList.remove('fa-info-circle', 'fa-check-circle', 'fa-exclamation-triangle');
+            toastHeader.classList.add('fa-exclamation-circle');
+            break;
+        case 'warning':
+            toastHeader.classList.add('text-warning');
+            toastHeader.classList.remove('fa-info-circle', 'fa-check-circle', 'fa-exclamation-circle');
+            toastHeader.classList.add('fa-exclamation-triangle');
+            break;
+        default:
+            toastHeader.classList.add('text-info');
+            toastHeader.classList.remove('fa-check-circle', 'fa-exclamation-circle', 'fa-exclamation-triangle');
+            toastHeader.classList.add('fa-info-circle');
+    }
+
+    // Show the toast
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+}
+
+// Fonction pour basculer entre le mode clair et sombre
+function toggleDarkMode() {
+    const htmlElement = document.documentElement;
+    const isDarkMode = htmlElement.getAttribute('data-bs-theme') === 'dark';
+    const newMode = isDarkMode ? 'light' : 'dark';
+
+    // Update HTML attribute
+    htmlElement.setAttribute('data-bs-theme', newMode);
+
+    // Update button icon
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    if (darkModeToggle) {
+        const icon = darkModeToggle.querySelector('i');
+        if (newMode === 'dark') {
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+            darkModeToggle.setAttribute('title', 'Passer en mode clair');
+        } else {
+            icon.classList.remove('fa-sun');
+            icon.classList.add('fa-moon');
+            darkModeToggle.setAttribute('title', 'Passer en mode sombre');
+        }
+    }
+
+    // Save preference to localStorage
+    localStorage.setItem('darkMode', newMode);
+
+    // Show toast notification
+    const title = newMode === 'dark' ? 'Mode sombre activé' : 'Mode clair activé';
+    const message = newMode === 'dark' ? 'L\'interface est maintenant en mode sombre.' : 'L\'interface est maintenant en mode clair.';
+    showToast(title, message, 'info');
+}
+
+// Initialisation des tooltips, du mode sombre et validation des formulaires
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize tooltips
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -61,10 +138,73 @@ document.addEventListener('DOMContentLoaded', function() {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 
+    // Initialize dark mode from saved preference
+    const savedMode = localStorage.getItem('darkMode');
+    if (savedMode) {
+        document.documentElement.setAttribute('data-bs-theme', savedMode);
+        if (savedMode === 'dark') {
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            if (darkModeToggle) {
+                const icon = darkModeToggle.querySelector('i');
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+                darkModeToggle.setAttribute('title', 'Passer en mode clair');
+            }
+        }
+    }
+
+    // Add dark mode toggle event listener
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    if (darkModeToggle) {
+        darkModeToggle.addEventListener('click', toggleDarkMode);
+    }
+
     // Add fade-in animation to cards
     document.querySelectorAll('.card').forEach(card => {
         card.classList.add('fade-in');
     });
+
+    // Add delete buttons to product cards
+    function addDeleteButtons() {
+        // Get all product cards
+        const productCards = document.querySelectorAll('.product-card');
+
+        productCards.forEach(card => {
+            // Find the card footer
+            const cardFooter = card.querySelector('.card-footer');
+            if (!cardFooter) return;
+
+            // Find the product ID from the update link
+            const updateLink = cardFooter.querySelector('a[href*="update-stock"]');
+            if (!updateLink) return;
+
+            // Extract product ID from the href attribute
+            const hrefParts = updateLink.getAttribute('href').split('/');
+            const productId = hrefParts[hrefParts.length - 1];
+
+            // Create delete form
+            const deleteForm = document.createElement('form');
+            deleteForm.setAttribute('action', `/products/delete/${productId}`);
+            deleteForm.setAttribute('method', 'POST');
+            deleteForm.classList.add('d-grid', 'mt-2');
+
+            // Create delete button
+            const deleteButton = document.createElement('button');
+            deleteButton.setAttribute('type', 'submit');
+            deleteButton.classList.add('btn', 'btn-outline-danger');
+            deleteButton.setAttribute('onclick', "return confirm('Êtes-vous sûr de vouloir supprimer ce produit?');");
+            deleteButton.innerHTML = '<i class="fas fa-trash-alt me-1"></i>Supprimer';
+
+            // Append button to form
+            deleteForm.appendChild(deleteButton);
+
+            // Append form to card footer
+            cardFooter.appendChild(deleteForm);
+        });
+    }
+
+    // Call the function to add delete buttons
+    addDeleteButtons();
 
     // Dynamic stock status updates
     function updateStockStatus() {

@@ -1,11 +1,21 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 import mysql.connector
 from mysql.connector import Error
 from datetime import datetime, timedelta
 import os
+import functools
 
 app = Flask(__name__)
 app.secret_key = 'une_cle_secrete_difficile_a_deviner'
+
+# Fonction pour vérifier si l'utilisateur est connecté
+def login_required(view):
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        if 'logged_in' not in session:
+            return redirect(url_for('login'))
+        return view(**kwargs)
+    return wrapped_view
 
 # Configuration de la base de données
 db_config = {
@@ -24,8 +34,41 @@ def get_db_connection():
         print(f"Erreur de connexion à la base de données: {e}")
         return None
 
+# Route pour la page de connexion
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        remember = 'remember' in request.form
+
+        # Vérification des identifiants (à remplacer par une vérification en base de données)
+        if username == 'admin' and password == 'admin':
+            session['logged_in'] = True
+            session['username'] = username
+
+            # Si "Se souvenir de moi" est coché, définir une durée de session plus longue
+            if remember:
+                session.permanent = True
+                app.permanent_session_lifetime = timedelta(days=30)
+
+            flash('Connexion réussie', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('Identifiants incorrects', 'danger')
+
+    return render_template('login.html')
+
+# Route pour la déconnexion
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('Vous avez été déconnecté', 'info')
+    return redirect(url_for('login'))
+
 # Route pour la page d'accueil
 @app.route('/')
+@login_required
 def index():
     conn = get_db_connection()
     if conn:
@@ -67,6 +110,7 @@ def index():
 
 # Route pour filtrer les produits
 @app.route('/products/filter', methods=['GET'])
+@login_required
 def filter_products():
     category_id = request.args.get('category_id')
     search = request.args.get('search')
@@ -139,6 +183,7 @@ def filter_products():
 
 # Route pour ajouter un produit
 @app.route('/products/add', methods=['GET', 'POST'])
+@login_required
 def add_product():
     if request.method == 'POST':
         name = request.form['name']
@@ -199,6 +244,7 @@ def add_product():
 
 # Route pour mettre à jour le stock
 @app.route('/products/update-stock/<int:product_id>', methods=['GET', 'POST'])
+@login_required
 def update_stock(product_id):
     conn = get_db_connection()
     if not conn:
@@ -268,6 +314,7 @@ def update_stock(product_id):
 
 # Route pour voir l'historique des mouvements d'un produit
 @app.route('/products/history/<int:product_id>')
+@login_required
 def product_history(product_id):
     conn = get_db_connection()
     if not conn:
@@ -299,8 +346,44 @@ def product_history(product_id):
 
     return render_template('product_history.html', product=product, movements=movements)
 
+# Route pour supprimer un produit
+@app.route('/products/delete/<int:product_id>', methods=['POST'])
+@login_required
+def delete_product(product_id):
+    conn = get_db_connection()
+    if not conn:
+        flash('Erreur de connexion à la base de données', 'danger')
+        return redirect(url_for('index'))
+
+    cursor = conn.cursor(dictionary=True)
+
+    # Récupérer les informations du produit
+    cursor.execute("SELECT * FROM products WHERE id = %s", (product_id,))
+    product = cursor.fetchone()
+
+    if not product:
+        cursor.close()
+        conn.close()
+        flash('Produit non trouvé', 'danger')
+        return redirect(url_for('index'))
+
+    try:
+        # Supprimer le produit (les mouvements de stock associés seront supprimés automatiquement grâce à ON DELETE CASCADE)
+        cursor.execute("DELETE FROM products WHERE id = %s", (product_id,))
+        conn.commit()
+        flash(f'Produit "{product["name"]}" supprimé avec succès', 'success')
+
+    except Error as e:
+        conn.rollback()
+        flash(f'Erreur lors de la suppression du produit: {e}', 'danger')
+
+    cursor.close()
+    conn.close()
+    return redirect(url_for('index'))
+
 # Route pour la recherche avancée
 @app.route('/advanced-search')
+@login_required
 def advanced_search():
     category_id = request.args.get('category_id')
     min_price = request.args.get('min_price')
